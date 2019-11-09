@@ -1,22 +1,16 @@
-# Debian/buster64 Xen
+# Ubuntu/bionic64 Xen
 
-## Setup
+## Prerequisites
 Please install these plugin<br>
 * `vagrant plugin install vagrant-vbguest`
 * `vagrant plugin install vagrant-disksize`
 
-Because debian/buster is being weird<br>
-You must run the `setup.sh` script to initially setup<br>
+**I consider this setup a single use throw away VM, it does not like being restarted or brought up with vagrant commands. Xen seems to break VBox Guest Additions.**
 
-**I consider this setup a single use throw away VM, it does not like being restarted or brought up with vagrant commands. Manualy starting, stopping or restarting with VirtualBox is fine.**
-
----
-
-## Post Setup Steps
-Please follow these steps once you have run `setup.sh`
-* Once provisioned, please reboot the vm
-* Reconnect and run `/mnt/share/post_setup.sh`, it will then reboot
-* Reconnect and run `brctl show` again to confirm its persistant
+## Setup Steps
+* Run `vagrant up`
+* Connect and run `sudo /media/share/setup.sh`
+* Once the system has rebooted, you can play with Xen
 
 ---
 
@@ -46,7 +40,7 @@ Please follow these steps once you have run `setup.sh`
 ## Process of creating an image
 `xen-create-image --hostname=my-guest --memory=512mb --vcpus=1 --lvm=vg0 --dhcp --pygrub --dist=buster --size=10gb --swap=1gb --password=root`
 
-`--dist` can be debian or ubuntu code names, for example, buster or eoan<br>
+`--dist` can be debian code names, for example, buster<br>
 <https://manpages.debian.org/buster/xen-tools/xen-create-image.8.en.html>
 
 ---

@@ -1,0 +1,10 @@
+network:
+    ethernets:
+        enp0s3:
+            dhcp4: true
+    bridges:
+        xenbr0:
+            dhcp4: true
+            interfaces:
+                - enp0s3
+    version: 2

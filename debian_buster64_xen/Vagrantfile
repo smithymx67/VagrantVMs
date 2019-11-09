@@ -26,6 +26,10 @@ Vagrant.configure("2") do |config|
     config.vm.synced_folder "share", "/mnt/share", create: true
   end
 
+  if ENV['RUN_FROM_SCRIPT'] != 'true'
+    config.vbguest.auto_update = false
+  end
+
   # Enable provisioning with a shell script.
   config.vm.provision "shell", inline: <<-SHELL
     apt update

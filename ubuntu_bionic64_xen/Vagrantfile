@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "ubuntu/eoan64"
+  config.vm.box = "ubuntu/bionic64"
 
   # Define disk size
   config.disksize.size = '20GB'
@@ -24,9 +24,18 @@ Vagrant.configure("2") do |config|
   # Example for VirtualBox:
   config.vm.provider "virtualbox" do |vb|
     # Customize the amount of memory on the VM:
-    vb.memory = "1024"
+    vb.memory = "2048"
 
     # Set vCPUs
-    vb.cpus = 1
+    vb.cpus = 2
+
+    # Create a disk if not found
+    disk = "lvmdisk.vdi"
+    unless File.exist?(disk)
+      vb.customize ['createhd', '--filename', disk, '--variant', 'Fixed', '--size', 50 * 1024]
+    end
+
+    # Attach the disk to the VM
+    vb.customize ['storageattach', :id,  '--storagectl', 'SCSI', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', disk]
   end
 end
