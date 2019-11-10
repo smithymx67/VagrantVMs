@@ -4,11 +4,12 @@ These VMs are designed to be run using Virtual Box.
 ## Current Configurations
 * `debian/buster64`
 * `debian/buster64 with Xen, Xen Tools`
+* `debian/buster64 with Apache 2, PHP 7.3, Maria DB, NodeJS, Composer`
 * `ubuntu/eoan64`
+* `ubuntu/eoan64 with Apache 2, PHP 7.3, Maria DB, NodeJS, Composer`
 
 ## Coming Soon
-* `debian/buster64 with Apache 2, PHP 7.3, MySQL, NodeJS, Composer`
-* `ubuntu/eoan64 with Apache 2, PHP 7.3, MySQL, NodeJS, Composer`
+* Nothing planned
 
 ## Plugins
 Please install these plugins since the VMs may use them<br>
