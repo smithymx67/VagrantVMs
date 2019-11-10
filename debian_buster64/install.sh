@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export FIRST_RUN='true'
 vagrant up --no-provision
 vagrant ssh -c 'sudo apt update'
