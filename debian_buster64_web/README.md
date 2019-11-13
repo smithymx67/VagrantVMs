@@ -1,4 +1,4 @@
-# Debian/buster64
+# Debian/buster64 - Web
 
 ## Setup
 Please install these plugin<br>

@@ -1,4 +1,4 @@
-# Ubuntu/eoan64 - Web
+# Ubuntu/eoan64 - Nagios
 
 ## Setup
 Please install these plugin<br>
@@ -15,22 +15,10 @@ Run `vagrant destroy` to delete
 
 ---
 
-## Secure the database
-You can run `mysql_secure_installation` to secure the mysql database
-
----
-
-## Access the datbase console
-You can access the database using `mariadb` or `mysql`
-
----
-
 ## Public Access
 Uncomment `config.vm.network "public_network"`<br>
 Then select the interface to bridge when asked
 
---
 
-## Composer and Node
-Composer can be used with the command `composer`<br>
-Node and NPM is also installed, `node` and `npm`
+https://draculaservers.com/tutorials/install-nagios-ubuntu/
+https://github.com/NagiosEnterprises/nagioscore/releases
