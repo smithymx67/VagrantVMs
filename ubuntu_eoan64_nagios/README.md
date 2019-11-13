@@ -21,4 +21,7 @@ Then select the interface to bridge when asked
 
 
 https://draculaservers.com/tutorials/install-nagios-ubuntu/
+https://www.digitalocean.com/community/tutorials/how-to-install-nagios-4-and-monitor-your-servers-on-ubuntu-18-04
+
 https://github.com/NagiosEnterprises/nagioscore/releases
+https://github.com/NagiosEnterprises/nrpe/releases
