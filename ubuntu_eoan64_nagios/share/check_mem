@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+""" Parse the output of free to determine RAM usage. """
+
+import argparse
+import re
+import subprocess
+import sys
+
+STATE_OK = (0, 'OK')
+STATE_WARNING = (1, 'WARNING')
+STATE_CRITICAL = (2, 'CRITICAL')
+STATE_UNKNOWN = (3, 'UNKNOWN')
+
+
+def parse_percent(text: str) -> float:
+    """ convert text percentage to float """
+    return float(text.strip('% \t')) / 100.0
+
+
+def parse_iso(text: str) -> float:
+    """ convert ISO size prefixes """
+    UNITS = {
+        'k': 10**3,
+        'm': 10**6,
+        'g': 10**9,
+        't': 10**12,
+        'p': 10**15,
+        'e': 10**18,
+        'z': 10**21,
+        'y': 10**24,
+        'ki': 2**10,
+        'mi': 2**20,
+        'gi': 2**30,
+        'ti': 2**40,
+        'pi': 2**50,
+        'ei': 2**60,
+        'zi': 2**70,
+        'yi': 2**80,
+    }
+    REGEX = re.compile(r'(\d+)\s*(\w*)')
+    num_str, unit = REGEX.search(text).groups()
+    unit = unit.lower().strip('b')
+    if unit in UNITS:
+        return float(num_str) * UNITS[unit]
+    return float(num_str)
+
+
+def get_free() -> dict:
+    """ Return object of parsed free output """
+    free_args = ['/usr/bin/free', '--bytes']
+
+    # if wide is available, use it
+    helptxt = subprocess.check_output(['/usr/bin/free', '--help'])
+    if '--wide' in helptxt.decode('utf-8'):
+        free_args.append('--wide')
+
+    stdout = subprocess.check_output(free_args)
+    lines = stdout.decode('utf-8').split('\n')
+
+    heads = re.split(r'\s+', lines[0])[1:]
+    vals = re.split(r'\s+', lines[1])[1:]
+    ret = {}
+    for i, head in enumerate(heads):
+        ret[head] = int(vals[i])
+    if 'cached' in ret:
+        cache = ret['cached']
+    else:
+        cache = ret['cache']
+    ret['used'] = ret['total'] - ret['free'] - ret['buffers'] - cache
+    return ret
+
+
+def get_status(free: dict, warning: str, critical: str) -> (int, str):
+    """ parse string inputs and compare with used memory """
+    total = float(free['total'])
+    # "calculated as total - free - buffers - cache" - from the `free` man page
+    # manually calculated for older versions of free
+    used = float(free['used'])
+    warn_thresh = 0
+    crit_thresh = 0
+    if '%' in warning:
+        warn_thresh = parse_percent(warning) * total
+    elif warning:
+        warn_thresh = parse_iso(warning)
+    if '%' in critical:
+        crit_thresh = parse_percent(critical) * total
+    elif critical:
+        crit_thresh = parse_iso(critical)
+    if used > total - crit_thresh:
+        return STATE_CRITICAL
+    if used > total - warn_thresh:
+        return STATE_WARNING
+    return STATE_OK
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='gather memory statistics for Nagios.'
+    )
+    parser.add_argument(
+        '-c', '--critical', type=str, default='',
+        help='Free RAM critical threshold.'
+    )
+    parser.add_argument(
+        '-w', '--warning', type=str, default='',
+        help='Free RAM warning threshold.'
+    )
+    args = parser.parse_args()
+
+    output = get_free()
+    status_code, status_str = get_status(output, args.warning, args.critical)
+    string = '{state} - RAM {perc:.2%} used|'.format(
+        state=status_str,
+        perc=output['used']/output['total']
+    )
+    for key, val in sorted(output.items()):
+        string += '{head}={val} '.format(head=key.lower(), val=val)
+    print(string)
+    sys.exit(status_code)

@@ -7,9 +7,12 @@ These VMs are designed to be run using Virtual Box.
 * `debian/buster64 with Apache 2, PHP 7.3, Maria DB, NodeJS, Composer`
 * `ubuntu/eoan64`
 * `ubuntu/eoan64 with Apache 2, PHP 7.3, Maria DB, NodeJS, Composer`
+* `ubuntu/eoan64 with Nagios`
 
 ## Coming Soon
-* Nothing planned
+* `ubuntu/eoan64 with Puppet`
+* `ubuntu/eoan64 with OpenVPN`
+* `ubuntu/eoan64 with Jenkins`
 
 ## Plugins
 Please install these plugins since the VMs may use them<br>
