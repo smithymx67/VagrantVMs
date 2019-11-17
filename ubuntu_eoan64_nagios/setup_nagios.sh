@@ -72,10 +72,11 @@ rm -r /usr/local/nagios/etc
 ln -s /etc/nagios/ /usr/local/nagios/etc
 mkdir /etc/nagios/conf.d
 
+mkdir /usr/lib/nagios
+mkdir /usr/lib/nagios/plugins/
 cp /media/share/nagios.cfg /usr/local/nagios/etc/nagios.cfg
 cp /media/share/cgi.cfg /usr/local/nagios/etc/cgi.cfg
 cp /media/share/resource.cfg /usr/local/nagios/etc/resource.cfg
-rm /usr/lib/nagios/plugins/check_pollen
 mv /usr/local/nagios/libexec/* /usr/lib/nagios/plugins/
 rm -r /usr/local/nagios/etc/objects
 

@@ -11,11 +11,9 @@ STATE_WARNING = (1, 'WARNING')
 STATE_CRITICAL = (2, 'CRITICAL')
 STATE_UNKNOWN = (3, 'UNKNOWN')
 
-
 def parse_percent(text: str) -> float:
     """ convert text percentage to float """
     return float(text.strip('% \t')) / 100.0
-
 
 def parse_iso(text: str) -> float:
     """ convert ISO size prefixes """
@@ -44,7 +42,6 @@ def parse_iso(text: str) -> float:
         return float(num_str) * UNITS[unit]
     return float(num_str)
 
-
 def get_free() -> dict:
     """ Return object of parsed free output """
     free_args = ['/usr/bin/free', '--bytes']
@@ -69,7 +66,6 @@ def get_free() -> dict:
     ret['used'] = ret['total'] - ret['free'] - ret['buffers'] - cache
     return ret
 
-
 def get_status(free: dict, warning: str, critical: str) -> (int, str):
     """ parse string inputs and compare with used memory """
     total = float(free['total'])
@@ -91,7 +87,6 @@ def get_status(free: dict, warning: str, critical: str) -> (int, str):
     if used > total - warn_thresh:
         return STATE_WARNING
     return STATE_OK
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

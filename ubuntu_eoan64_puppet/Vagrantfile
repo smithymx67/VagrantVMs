@@ -19,6 +19,30 @@ Vagrant.configure("2") do |config|
   # Create shared folder
   config.vm.synced_folder "share", "/media/share", create: true, type: "virtualbox"
 
+  # Define the puppet server
+  config.vm.define "puppet" do |puppet|
+    # Set the hostname for the puppet
+    puppet.vm.hostname = "puppet"
+
+    # Setup a private network
+    puppet.vm.network "private_network", ip: "10.0.0.10"
+
+    # Install puppet things here
+    puppet.vm.provision "shell", path: "setup_puppet.sh"
+  end
+
+  # Define a client for puppet
+  config.vm.define "client" do |client|
+    # Set the hostname for the client
+    client.vm.hostname = "client"
+
+    # Setup a private network
+    client.vm.network "private_network", ip: "10.0.0.11"
+
+    # Install client things here
+    client.vm.provision "shell", path: "setup_client.sh"
+  end
+
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
