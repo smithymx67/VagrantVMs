@@ -23,9 +23,9 @@ make install-commandmode
 make install-exfoliation
 cp -R contrib/eventhandlers/ /usr/local/nagios/libexec/
 chown -R nagios:nagios /usr/local/nagios/libexec/eventhandlers
-cp /media/share/nagios.conf /etc/apache2/conf-available/nagios.conf
-cp /media/share/000-default.conf /etc/apache2/sites-available/000-default.conf
-cp /media/share/apache2nagios.conf /etc/apache2/sites-available/nagios.conf
+cp /media/share/nagios/etc/apache2/conf-available/nagios.conf /etc/apache2/conf-available/nagios.conf
+cp /media/share/nagios/etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/000-default.conf
+cp /media/share/nagios/etc/apache2/sites-available/nagios.conf /etc/apache2/sites-available/nagios.conf
 htpasswd -bc /usr/local/nagios/etc/htpasswd.users nagiosadmin nagiosadmin
 a2enconf nagios
 a2ensite nagios
@@ -62,7 +62,12 @@ make install-webconf
 make install-config
 make install-init
 rm /usr/local/pnp4nagios/share/install.php
-cp /media/share/apache2pnp4nagios.conf /etc/apache2/sites-available/pnp4nagios.conf
+cp /media/share/nagios/usr/local/pnp4nagios/etc/check_commands/nrpe.cfg /usr/local/pnp4nagios/etc/check_commands/nrpe.cfg
+cp /media/share/nagios/usr/local/pnp4nagios/share/templates/* /usr/local/pnp4nagios/share/templates/
+cp /media/share/nagios/usr/local/pnp4nagios/etc/pages/* /usr/local/pnp4nagios/etc/pages/
+ln -s /usr/local/pnp4nagios/share/templates/check_disk.php /usr/local/pnp4nagios/share/templates/check_root.php
+ln -s /usr/local/pnp4nagios/share/templates/check_disk.php /usr/local/pnp4nagios/share/templates/check_swap.php
+cp /media/share/nagios/etc/apache2/sites-available/pnp4nagios.conf /etc/apache2/sites-available/pnp4nagios.conf
 a2ensite pnp4nagios
 systemctl restart apache2
 
@@ -74,22 +79,32 @@ mkdir /etc/nagios/conf.d
 
 mkdir /usr/lib/nagios
 mkdir /usr/lib/nagios/plugins/
-cp /media/share/nagios.cfg /usr/local/nagios/etc/nagios.cfg
-cp /media/share/cgi.cfg /usr/local/nagios/etc/cgi.cfg
-cp /media/share/resource.cfg /usr/local/nagios/etc/resource.cfg
+cp /media/share/nagios/usr/local/nagios/etc/nagios.cfg /usr/local/nagios/etc/nagios.cfg
+cp /media/share/nagios/usr/local/nagios/etc/cgi.cfg /usr/local/nagios/etc/cgi.cfg
+cp /media/share/nagios/usr/local/nagios/etc/resource.cfg /usr/local/nagios/etc/resource.cfg
 mv /usr/local/nagios/libexec/* /usr/lib/nagios/plugins/
 rm -r /usr/local/nagios/etc/objects
 
-cp /media/share/00.templates.cfg /usr/local/nagios/etc/conf.d/00.templates.cfg
-cp /media/share/01.contacts.cfg /usr/local/nagios/etc/conf.d/01.contacts.cfg
-cp /media/share/01.groups.cfg /usr/local/nagios/etc/conf.d/01.groups.cfg
-cp /media/share/01.timeperiods.cfg /usr/local/nagios/etc/conf.d/01.timeperiods.cfg
-cp /media/share/02.commands.cfg /usr/local/nagios/etc/conf.d/02.commands.cfg
-cp /media/share/02.services.cfg /usr/local/nagios/etc/conf.d/02.services.cfg
-cp /media/share/20.HOST.LOCAL.nagios.cfg /usr/local/nagios/etc/conf.d/20.HOST.LOCAL.nagios.cfg
-cp /media/share/20.HOST.LOCAL.client.cfg /usr/local/nagios/etc/conf.d/20.HOST.LOCAL.client.cfg
-cp /media/share/check_mem /usr/local/nagios/libexec/check_mem
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/00.templates.cfg /usr/local/nagios/etc/conf.d/00.templates.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/01.contacts.cfg /usr/local/nagios/etc/conf.d/01.contacts.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/01.groups.cfg /usr/local/nagios/etc/conf.d/01.groups.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/01.timeperiods.cfg /usr/local/nagios/etc/conf.d/01.timeperiods.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/02.commands.cfg /usr/local/nagios/etc/conf.d/02.commands.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/02.services.cfg /usr/local/nagios/etc/conf.d/02.services.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/20.HOST.LOCAL.nagios.cfg /usr/local/nagios/etc/conf.d/20.HOST.LOCAL.nagios.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/20.HOST.NRPE.client.cfg /usr/local/nagios/etc/conf.d/20.HOST.NRPE.client.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/40.HOST.NRPE-CHECK.nagios.webserver.cfg /usr/local/nagios/etc/conf.d/40.HOST.NRPE-CHECK.nagios.webserver.cfg
+cp /media/share/nagios/usr/local/nagios/etc/conf.d/40.HOST.NRPE-CHECK.client.webserver.cfg /usr/local/nagios/etc/conf.d/40.HOST.NRPE-CHECK.client.webserver.cfg
+cp /media/share/nagios/usr/local/nagios/libexec/check_mem /usr/local/nagios/libexec/check_mem
+cp /media/share/nagios/usr/local/nagios/libexec/check_apache /usr/local/nagios/libexec/check_apache
 
 chmod +x /usr/local/nagios/libexec/check_mem
-systemctl reload nagios
+chmod +x /usr/local/nagios/libexec/check_apache
+
+systemctl restart nagios
 systemctl restart apache2
+
+ufw -f enable
+ufw allow 22
+ufw allow 80
+ufw reload

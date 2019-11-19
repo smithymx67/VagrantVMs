@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+
+""" Read localhost/server-status?auto to gather apache server statistics. """
+
+import argparse
+import collections
+import json
+import re
+import sys
+import tempfile
+
+import requests
+
+STATE_OK = (0, 'OK')
+STATE_WARNING = (1, 'WARNING')
+STATE_CRITICAL = (2, 'CRITICAL')
+STATE_UNKNOWN = (3, 'UNKNOWN')
+
+# Data to report on
+PERFDATA = [
+    'BusyWorkers',
+    'BytesPerReq',  # Recalculated
+    'BytesPerSec',  # Recalculated
+    'ConnsAsyncClosing',
+    'ConnsAsyncKeepAlive',
+    'ConnsAsyncWriting',
+    'ConnsTotal',
+    'IdleWorkers',
+    'ReqPerSec',  # Recalculated
+    'ServerUptimeSeconds',
+    'Total Accesses',
+    'Total kBytes',
+]
+
+# Data to calculate the difference on
+DELTA = [
+    'ServerUptimeSeconds',
+    'Total Accesses',
+    'Total kBytes',
+]
+
+
+def get_serverstatus(host: str = 'localhost', port: int = 80, uri: str = 'server-status') -> dict:
+    """ get /server-status?auto and parse to dict. """
+    REGEX = re.compile(r'([\w\s]+): (.*)')
+    response = requests.get('http://{host}:{port}/{uri}?auto'.format(
+        host=host,
+        port=port,
+        uri=uri
+    ))
+    response.raise_for_status()
+    ret = {}
+    for line in response.iter_lines():
+        matches = REGEX.match(line.decode('utf-8'))
+        if matches is None:
+            continue
+        key, value = matches.groups()
+        ret[key] = value.strip()
+    return ret
+
+
+def save_delta(status: dict, filename: str):
+    data = {}
+    for k, v in status.items():
+        if k in DELTA:
+            data[k] = v
+    with open(filename, 'w') as delta_file:
+        json.dump(data, delta_file)
+
+
+def load_delta(filename: str) -> dict:
+    try:
+        with open(filename, 'r') as delta_file:
+            return json.load(delta_file)
+    except FileNotFoundError:
+        return dict.fromkeys(DELTA, 1)
+
+
+def parse_num(string: str) -> float:
+    """ return either an int or float parsed from the string, or None if a ValueError is thrown. """
+    try:
+        return int(string)
+    except ValueError:
+        try:
+            return float(string)
+        except ValueError:
+            return None
+
+
+def parse_scoreboard(scores: str) -> dict:
+    count = collections.Counter(sorted(scores))
+    return {
+        'WorkersIdle':      count['_'],  # Waiting for Connection
+        'WorkersStarting':  count['S'],  # Starting up
+        'WorkersReading':   count['R'],  # Reading Request
+        'WorkersSending':   count['W'],  # Sending Reply
+        'WorkersKeepalive': count['K'],  # Keepalive (read)
+        'WorkersDNS':       count['D'],  # DNS Lookup
+        'WorkersClosing':   count['C'],  # Closing connection
+        'WorkersLogging':   count['L'],  # Logging
+        'WorkersFinishing': count['G'],  # Gracefully finishing
+        'WorkersCleanup':   count['I'],  # Idle cleanup of worker
+        'WorkersOpen':      count['.'],  # Open slot with no current process
+    }
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Read apache server-status and report statistics.'
+    )
+    parser.add_argument(
+        '-H', '--host', type=str, default='localhost',
+        help='Host to query.'
+    )
+    parser.add_argument(
+        '-p', '--port', type=int, default=80,
+        help='Port to query.'
+    )
+    parser.add_argument(
+        '-u', '--uri', type=str, default='server-status',
+        help='URI to query.'
+    )
+    args = parser.parse_args()
+
+    temp_file = '{dir}/{check}.{host}_{port}.{uri}'.format(
+        dir=tempfile.gettempdir(),
+        check='check_apache',
+        host=args.host,
+        port=args.port,
+        uri=args.uri
+    )
+
+    output = dict.fromkeys(PERFDATA, 0)
+    try:
+        output = get_serverstatus(host=args.host, port=args.port, uri=args.uri)
+        if 'ServerVersion' not in output.keys():
+            output['ServerVersion'] = 'Apache'
+        status_code, status_str = STATE_OK
+
+    except (requests.exceptions.Timeout, requests.exceptions.TooManyRedirects) as err:
+        status_code, status_str = STATE_CRITICAL
+        output['ServerVersion'] = 'Apache: Connection Error\n{what}'.format(what=err)
+    except requests.exceptions.HTTPError as err:
+        status_code, status_str = STATE_CRITICAL
+        output['ServerVersion'] = 'Apache: HTTP Error\n{what}'.format(what=err)
+    except requests.exceptions.RequestException as err:
+        status_code, status_str = STATE_CRITICAL
+        output['ServerVersion'] = 'Apache: Misc Error\n{what}'.format(what=err)
+    except Exception as err:
+        status_code, status_str = STATE_CRITICAL
+        output['ServerVersion'] = 'Apache: Unknown Error\n{what}'.format(what=err)
+        #raise
+
+    delta = load_delta(temp_file)
+    for k in delta.keys():
+        if k in output.keys():
+            delta[k] = float(output[k]) - float(delta[k])
+    for k in DELTA:
+        if k not in delta.keys():
+            if k in output.keys():
+                delta[k] = float(output[k])
+            else:
+                delta[k] = 0
+
+    # recalculate for rolling average
+    if delta['Total Accesses'] > 0:
+        output['BytesPerReq'] = delta['Total kBytes']   / delta['Total Accesses']
+    else:
+        delta['BytesPerReq'] = 0
+    if delta['ServerUptimeSeconds'] > 0:
+        output['BytesPerSec'] = delta['Total kBytes']   / delta['ServerUptimeSeconds']
+        output['ReqPerSec']   = delta['Total Accesses'] / delta['ServerUptimeSeconds']
+    else:
+        output['BytesPerSec'] = 0
+        output['ReqPerSec']   = 0
+
+    status_str = '{state} - {name}|'.format(
+        state=status_str,
+        name=output['ServerVersion']
+    )
+    for key, val in sorted(output.items()):
+        number = parse_num(val)
+        if key in PERFDATA and number is not None:
+            if isinstance(number, int):
+                status_str += "'{key}'={val} ".format(key=key, val=number)
+            else:
+                # avoid exponents
+                status_str += "'{key}'={val:6f} ".format(key=key, val=number)
+        elif key == 'Scoreboard':
+            for worker_state, count in sorted(parse_scoreboard(val).items()):
+                status_str += "'{key}'={val} ".format(key=worker_state, val=count)
+
+    print(status_str)
+
+    save_delta(output, temp_file)
+
+    sys.exit(status_code)
