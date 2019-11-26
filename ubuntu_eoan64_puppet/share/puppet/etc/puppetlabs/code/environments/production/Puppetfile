@@ -1,0 +1,10 @@
+# https://puppet.com/docs/bolt/latest/bolt_installing_modules.html
+# `bolt puppetfile install`
+
+# Modules from the Puppet Forge.
+mod 'puppetlabs-ntp', '8.1.0'
+mod 'puppetlabs-stdlib', '6.1.0'
+mod 'puppetlabs-firewall', '2.1.0'
+mod 'saz-sudo', '6.0.0'
+
+# install with `puppet module install` then update this file to reflect versions

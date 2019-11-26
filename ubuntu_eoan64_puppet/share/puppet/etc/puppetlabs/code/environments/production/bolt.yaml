@@ -1,0 +1,6 @@
+---
+# Only currently used for module installation
+
+# Bolt installs modules to ./modules/
+# Custom modules installed in ./site-modules/
+modulepath: "./modules"
